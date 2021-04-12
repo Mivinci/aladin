@@ -40,7 +40,7 @@ To fetch source from environment variables, use an `EnvSource`:
 
 ```go
 aladin.Init(
-  aladin.WithSource(aladin.NewEnvSource()),
+    aladin.WithSource(aladin.NewEnvSource()),
 )
 ```
 
@@ -65,11 +65,21 @@ So far, aladin has supported `YAML` and `JSON` formats of file. To use one of th
 
 ```go
 aladin.Init(
-  aladin.WithParser(aladin.NewJSONParser()),
+    aladin.WithParser(aladin.NewJSONParser()),
 )
 ```
 
 Then you can delightfully use aladin to get field values from your configuration file with the matching format.
+
+**Enable hot-reload**
+
+The `FileSource` supports - `EnvSource` **does not** - a `hot-reload` feature which means you don't have to shutdown a server when updating some configuration. Enable it on initialing the aladin.
+
+```go
+aladin.Init(aladin.WithHotReload())
+```
+
+After starting your server, try modifying your configuration file, you can see the `aladin.Get` method returns a different value :)
 
 ------
 
