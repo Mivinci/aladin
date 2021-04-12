@@ -22,7 +22,7 @@ type Config interface {
 	Close() error
 }
 
-var _ Config = &config{}
+var _ Config = (*config)(nil)
 
 const maxRetry = 5
 
@@ -31,7 +31,7 @@ type config struct {
 
 	sync.RWMutex
 	snap  *Snapshot
-	store Store // 当作指针
+	store Store // 当指针用
 
 	exit chan struct{}
 }
@@ -40,7 +40,9 @@ func New(opts ...Option) (Config, error) {
 	var c config
 
 	c.Init(opts...)
-	go c.deamon()
+	if c.options.hotReload {
+		go c.deamon()
+	}
 
 	return &c, nil
 }
@@ -60,23 +62,28 @@ func (c *config) Sync() error {
 	c.Lock()
 	defer c.Unlock()
 
-	c.snap = snap
-	c.store, err = c.options.parser.Parse(snap)
+	err = c.sync(snap)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+func (c *config) sync(snap *Snapshot) (err error) {
+	c.snap = snap
+	c.store, err = c.options.parser.Parse(snap)
+	return
+}
+
 func (c *config) deamon() {
-	next := func(w Watcher) error {
+	watch := func(w Watcher) error {
 		for {
 			snap, err := w.Next()
 			if err != nil {
 				return err
 			}
 			c.Lock()
-			c.snap = snap
+			c.sync(snap)
 			c.Unlock()
 		}
 	}
@@ -84,7 +91,7 @@ func (c *config) deamon() {
 		w, err := c.options.source.Watch()
 		if err != nil {
 			log.Println("open watcher failed, retrying", i)
-			time.Sleep(time.Second) // just like it's retrying
+			time.Sleep(time.Second) // like it's retrying
 			continue
 		}
 
@@ -98,7 +105,7 @@ func (c *config) deamon() {
 			w.Stop() // bp1
 		}()
 
-		if err = next(w); err != nil {
+		if err = watch(w); err != nil {
 			log.Panicln("next snapshot error", err)
 		}
 
@@ -113,13 +120,8 @@ func (c *config) deamon() {
 }
 
 func (c *config) Close() error {
-	select {
-	case <-c.exit:
-		return nil
-	default:
-		close(c.exit)
-	}
-	return nil
+	close(c.exit)
+	return c.options.source.Close()
 }
 
 func (c *config) Get(path string) Value {
@@ -132,6 +134,9 @@ func (c *config) Get(path string) Value {
 }
 
 func (c *config) Set(path string, v interface{}) {
+	if c.options.readOnly {
+		return
+	}
 	c.Lock()
 	defer c.Unlock()
 	if c.store != nil {
@@ -140,6 +145,9 @@ func (c *config) Set(path string, v interface{}) {
 }
 
 func (c *config) Del(path string) {
+	if c.options.readOnly {
+		return
+	}
 	c.Lock()
 	defer c.Unlock()
 	if c.store != nil {

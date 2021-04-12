@@ -12,4 +12,16 @@ type Source interface {
 	Write(*Snapshot) error
 	// Watch 获取配置监听器
 	Watch() (Watcher, error)
+	// Close 关闭配置源
+	Close() error
+	// String 返回配置源类型
+	String() string
+}
+
+// Watcher 配置监听器，监听配置内容更新
+type Watcher interface {
+	// Next 获取新配置快照
+	Next() (*Snapshot, error)
+	// Stop 停止监听配置
+	Stop() error
 }
