@@ -32,6 +32,14 @@ aladin.Get("name").String("") // xjj
 aladin.Get("bio.favorites").StringSlice(nil) // ["wfs", "sing"]
 ```
 
+The parameter passed to the `String` and `StringSlice` methods is values to be returned when aladin fails to fetch the configuration or the path provided does not exist.
+
+When finishing using aladin, don't forget to close it by calling
+
+```go
+aladin.Close()
+```
+
 ## Functionality
 
 **Custom configuration sources**
@@ -79,7 +87,7 @@ The `FileSource` supports - `EnvSource` **does not** - a `hot-reload` feature wh
 aladin.Init(aladin.WithHotReload())
 ```
 
-After starting your server, try modifying your configuration file, you can see the `aladin.Get` method returns a different value :)
+After starting up your server, try modifying your configuration file, you can see the `aladin.Get` method returns a different value :)
 
 ------
 
