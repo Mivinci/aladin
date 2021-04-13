@@ -11,6 +11,10 @@ func Sync() error {
 	return DefaultConfig.Sync()
 }
 
+func Snapshots() *Snapshot {
+	return DefaultConfig.Snapshot()
+}
+
 func Close() error {
 	return DefaultConfig.Close()
 }

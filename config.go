@@ -15,6 +15,8 @@ type Config interface {
 	// Sync 同步配置
 	// 包括同步Snapshot。如必要，也同步Parser
 	Sync() error
+	// Snapshot 获取当前配置快照
+	Snapshot() *Snapshot
 	// Close 关闭配置
 	// 对于本地文件配置，则关闭文件；
 	// 对于远程配置服务，则关闭连接；
@@ -69,7 +71,11 @@ func (c *config) Sync() error {
 	return nil
 }
 
+// sync must be wrapped with a locker to insure concurrent-safe
 func (c *config) sync(snap *Snapshot) (err error) {
+	// TODO: check if the sum of snapshot is changed
+	//       if so, continue excuting and return a
+	//       nil if not.
 	c.snap = snap
 	c.store, err = c.options.parser.Parse(snap)
 	return
@@ -112,7 +118,7 @@ func (c *config) deamon() {
 		close(done) // 触发bp1
 
 		select {
-		case <-c.exit: // 检查condig是否退出
+		case <-c.exit: // 检查config是否退出
 			return
 		default:
 		}
@@ -122,6 +128,12 @@ func (c *config) deamon() {
 func (c *config) Close() error {
 	close(c.exit)
 	return c.options.source.Close()
+}
+
+func (c *config) Snapshot() *Snapshot {
+	c.RLock()
+	defer c.RUnlock()
+	return c.snap
 }
 
 func (c *config) Get(path string) Value {

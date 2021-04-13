@@ -32,19 +32,28 @@ func WithParser(p Parser) Option {
 	}
 }
 
+// WithReadOnly 使用该函数让config只可读，
+// 即不能修改加载到内存中的配置值
 func WithReadOnly() Option {
 	return func(o *Options) {
 		o.readOnly = true
 	}
 }
 
+// WithHotReload 对于本地文件配置，使用该函数启动热更新，
+// 即服务运行期手动更新配置文件内容会触发config重新读取配置
 func WithHotReload() Option {
 	return func(o *Options) {
 		o.hotReload = true
 	}
 }
 
-func WithEnv() Option {
+// WithEnvSource 使用环境变量配置源，等价于
+// Init(
+//     WithSource(NewEnvSource())
+//     WithParser(NewEnvParser())
+// )
+func WithEnvSource() Option {
 	return func(o *Options) {
 		o.source = NewEnvSource()
 		o.parser = NewEnvParser()
